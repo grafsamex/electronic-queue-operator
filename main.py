@@ -6,7 +6,7 @@ import pandas as pd
 
 
 class Programm:
-    db_name = '\\\\srv\\NEW\\script\\baza.db'
+    db_name = '\\\\path\\path\\path\\baza.db'
 
     def __init__(self, window):
 
@@ -55,16 +55,24 @@ class Programm:
         query = 'SELECT * FROM patients ORDER BY time DESC'
         db_rows = self.run_query(query)
         for row in db_rows:
-            self.tree.insert('', 0, text = row[0], values = row[1])
+            self.tree.insert('', 0, text = row[0], values = row[1:])
 
     # валидация ввода
     def validation(self):
         return len(self.time.get()) != 0 and len(self.fio.get()) != 0
+    #валидация времени
+    def validation_time(self, time):
+        if len(time) == 4 and (time[0] == '7' or time[0] == '8' or time[0] == '9'):
+            time = '0'+ time
+        if len(time) == 5 and time[2] != ':':
+            time = time[0:2]+':'+time[3:]
+        return time
+
     # добавление нового слова
     def add_fio(self):
         if self.validation():
             query = 'INSERT INTO patients VALUES(?, ?)'
-            parameters =  (self.time.get(), self.fio.get())
+            parameters =  (self.validation_time(self.time.get()), str(self.fio.get())) #Вставлено преобразование в строковое
             self.run_query(query, parameters)
             self.message['text'] = 'Пациент {} добавлен в очередь'.format(self.fio.get())
             self.time.delete(0, END)
@@ -76,13 +84,13 @@ class Programm:
     def delete_fio(self):
         self.message['text'] = ''
         try:
-            self.tree.item(self.tree.selection())['text'][0]
-            print(self.tree.item(self.tree.selection())['text'][1])
+            self.tree.item(self.tree.selection())['text']
+            print(self.tree.item(self.tree.selection())['text'])
         except IndexError as e:
             self.message['text'] = 'Выберите пациента, которого нужно удалить'
             return
         self.message['text'] = ''
-        fio = self.tree.item(self.tree.selection())['values'][0]
+        fio = str(self.tree.item(self.tree.selection())['values'][0])
         print(self.tree.item(self.tree.selection())['values'][0])
         print(fio)
         query = 'DELETE FROM patients WHERE fio = ?'
@@ -139,12 +147,13 @@ class Programm:
         
         for i in range(len(df)):
             query = 'INSERT INTO patients VALUES(?, ?)'
-            parameters =  (df['Время'][i], df['ФИО'][i])
+            parameters =  (self.validation_time(df['Время'][i]), df['ФИО'][i])
             self.run_query(query, parameters)
         self.get_pacients()
         self.message['text'] = ''
 
 
-window = Tk()
-application = Programm(window)
-window.mainloop()
+if __name__ == '__main__':
+    window = Tk()
+    application = Programm(window)
+    window.mainloop()
